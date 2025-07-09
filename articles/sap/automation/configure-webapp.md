@@ -4,7 +4,7 @@ description: Configure a web app as a part of the control plane to help creating
 author: akashdubey-ms
 ms.author: akashdubey
 ms.reviewer: wsheehan
-ms.date: 10/19/2022
+ms.date: 01/15/2025
 ms.topic: concept-article
 ms.service: sap-on-azure
 ms.subservice: sap-automation
@@ -13,7 +13,7 @@ ms.custom: devx-track-azurecli
 
 # Configure the Control Plane Web Application credentials
 
-As a part of the SAP automation framework control plane, you can optionally create an interactive web application that assists you in creating the required configuration files and deploying SAP workload zones and systems using Azure Pipelines.
+As a part of the SAP automation framework control plane, you can optionally create an interactive web application. The web application will assists you in creating the required configuration files and deploying SAP workload zones and systems using Azure Pipelines.
 
 :::image type="content" source="./media/deployment-framework/webapp-front-page.png" alt-text="Web app front page":::
 
@@ -21,6 +21,9 @@ As a part of the SAP automation framework control plane, you can optionally crea
 ## Create an app registration
 
 If you would like to use the web app, you must first create an app registration for authentication purposes. Open the Azure Cloud Shell and execute the following commands:
+
+> [!NOTE]
+> Ensure you have the latest version of Azure CLI installed and are signed in with appropriate permissions to create app registrations. You need at least Application Administrator or Global Administrator role in Microsoft Entra ID.
 
 # [Linux](#tab/linux)
 Replace MGMT with your environment as necessary.
@@ -39,20 +42,23 @@ TF_VAR_webapp_client_secret=$(az ad app credential reset \
     --query "password" | tr -d '"')
 
 echo "App registration ID:  ${TF_VAR_app_registration_app_id}"
-echo "App registration password:  ${TF_VAR_app_registration_app_id}"
+echo "App registration password:  ${TF_VAR_webapp_client_secret}"
 
 rm manifest.json
 ```
+> [!IMPORTANT]
+> After creating the app registration, you must grant admin consent for the Microsoft Graph permissions. Navigate to the Azure portal > Microsoft Entra ID > App registrations > your app > API permissions, and select "Grant admin consent for [your tenant]". This step is required for the web application to function properly.
+
 # [Windows](#tab/windows)
 Replace MGMT with your environment as necessary.
 ```powershell
 Add-Content -Path manifest.json -Value '[{"resourceAppId":"00000003-0000-0000-c000-000000000000","resourceAccess":[{"id":"e1fe6dd8-ba31-4d61-89e7-88639da4683d","type":"Scope"}]}]'
 
 $TF_VAR_app_registration_app_id=(az ad app create `
-    --display-name $region_code-webapp-registration     `
+    --display-name MGMT-webapp-registration     `
     --enable-id-token-issuance true `
     --sign-in-audience AzureADMyOrg `
-    --required-resource-accesses ./manifest.json        `
+    --required-resource-access ./manifest.json        `
     --query "appId").Replace('"',"")
 
 $TF_VAR_webapp_client_secret=(az ad app credential reset `
@@ -64,6 +70,9 @@ Write-Host "App registration password:  $TF_VAR_webapp_client_secret"
 
 rm ./manifest.json
 ```
+> [!IMPORTANT]
+> After creating the app registration, you must grant admin consent for the Microsoft Graph permissions. Navigate to the Azure portal > Microsoft Entra ID > App registrations > your app > API permissions, and select "Grant admin consent for [your tenant]". This step is required for the web application to function properly.
+
 ---
 
 Persist the values in the control plane variable group for later use.
@@ -76,15 +85,26 @@ Persist the values in the control plane variable group for later use.
 | `WEB_APP_CLIENT_SECRET`          | App registration password from last step    | Mark as secret |
 
 
+## Security considerations
+
+When configuring the web application, consider the following security best practices:
+
+- **Principle of least privilege**: Grant only the minimum required permissions to the app registration and managed identity.
+- **Secret management**: Store the client secret securely in Azure Key Vault or mark it as a secret in your pipeline variables.
+- **Access restrictions**: Configure network access restrictions to limit who can access the web application.
+- **Regular rotation**: Implement a process to regularly rotate the app registration client secret.
+- **Monitoring**: Enable logging and monitoring to track access to the web application.
+
 ## Deploy via Azure Pipelines
 
 For full instructions on setting up the web app using Azure DevOps, see [Use SAP on Azure Deployment Automation Framework from Azure DevOps Services](configure-devops.md)
 
 ### Summary of steps required to access the web app after deploying the control plane:
-1. Update the app registration reply URLs.
-2. Assign the reader role with the subscription scope to the app service system assigned managed identity.
-3. Run the web app deployment pipeline.
-4. (Optionally) add another access policy to the app service.
+1. Update the app registration reply URLs (redirect URIs).
+2. Grant admin consent for the app registration API permissions.
+3. Assign the Reader role with subscription scope to the app service system-assigned managed identity.
+4. Run the web app deployment pipeline.
+5. (Optionally) configure additional access restrictions for the app service.
 
 ## Deploy via Azure CLI (Cloud Shell)
 
@@ -94,8 +114,7 @@ For full instructions on setting up the web app using the Azure CLI, see [Deploy
 
 By default there's no inbound public internet access to the web app apart from the deployer virtual network. To allow other access to the web app, navigate to the Azure portal. In the deployer resource group, find the web app. Then under settings on the left hand side, select networking. From here, select Access restriction. Add any allow or deny rules you would like. For more information on configuring access restrictions, see [Set up Azure App Service access restrictions](../../app-service/app-service-ip-restrictions.md).
 
-You'll also need to grant reader permissions to the app service system-assigned managed identity. Navigate to the app service resource. On the left hand side, select "Identity In the "system assigned" tab, select on "Azure role assignments" > "Add role assignment." Select "subscription" as the scope, and "reader" as the role. Then select save. Without this step, the web app dropdown functionality won't work.
-".
+You'll also need to grant reader permissions to the app service system-assigned managed identity. Navigate to the app service resource. On the left hand side, select "Identity". In the "system assigned" tab, select on "Azure role assignments" > "Add role assignment." Select "subscription" as the scope, and "reader" as the role. Then select save. Without this step, the web app dropdown functionality won't work.
 
 You can sign in and visit the web app by following the URL from earlier or selecting browse inside the app service resource. With the web app, you're able to configure SAP workload zones and system infrastructure. Select download to obtain a parameter file of the workload zone or system you specified, for use in the later deployment steps.
 

@@ -6,7 +6,7 @@ services: application-gateway
 author: jaesoni
 ms.service: azure-application-gateway
 ms.topic: concept-article
-ms.date: 05/30/2024
+ms.date: 07/09/2025
 ms.author: jaysoni 
 # Customer intent: As an IT administrator, I want to monitor the health of backend servers using health probes, so that I can ensure reliable traffic routing and quickly troubleshoot any issues that arise with the application gateway.
 ---
