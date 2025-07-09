@@ -144,7 +144,7 @@ We'll connect to the backend using HTTPS.
 1. Under **HTTP Settings**, select an existing HTTP setting or add a new one.
 2. When creating a new HTTP Setting, give it a name
 3. Select HTTPS as the desired backend protocol using port 443
-4. If the certificate is signed by a well known authority, select "Yes" for "User well known CA certificate".Alternatively [Add authentication/trusted root certificates of backend servers](./end-to-end-ssl-portal.md#add-authenticationtrusted-root-certificates-of-backend-servers)
+4. If the certificate is signed by a well known authority, select "Yes" for "User well known CA certificate." Alternatively [Add authentication/trusted root certificates of backend servers](./end-to-end-ssl-portal.md#add-authenticationtrusted-root-certificates-of-backend-servers)
 5. Make sure to set "Override with new host name" to "No"
 6. Select the custom HTTPS health probe in the dropdown for "Custom probe".
 
